@@ -28,27 +28,30 @@ The initial interface can be an API or a simple command-line one. A polished fro
 
 ```
 Suspect Wallet Address
-          |
-          v
-      Go Backend
-          |
-          v
-    Blockchain Analysis
-          |
-          v
-    Transaction Data
-          |
-          v
-    Fund-Flow Tracing
-          |
-          v
-    Known Exchange/VASP Data
-          |
-          v
-    Investigation Result
-          |
-          v
-      PostgreSQL
+      |
+      v
+  Go Backend
+      |
+      v
+Blockchain Analysis
+      |
+      | (retrieves transaction data
+      |  from the blockchain data source)
+      v
+Transaction Data (-> parsed and normalized)
+      |
+      v
+Fund-Flow Tracing
+      |
+      v
+Known Exchange/VASP Data (compared with traced destinations)
+      |
+      v
+Investigation Result
+      |
+      |-> exposed through the API
+      |
+      |-> persisted (PostgreSQL)
 ```
 
 The result should contain enough information for an investigator to understand:
