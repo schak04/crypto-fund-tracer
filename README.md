@@ -21,3 +21,9 @@ Given a suspect wallet address, the system should:
 - present the resulting fund flow in a form useful to investigators
 
 The initial version will focus on a small, well-defined scope and will be expanded only after the MVP is complete. It has been written about in detail here: [`mvp.md`](docs/mvp.md).
+
+# System Design
+
+## High-Level Design
+
+- [`design.md`](./docs/hld/design.md)
