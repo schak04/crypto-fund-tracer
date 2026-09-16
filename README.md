@@ -27,3 +27,8 @@ The initial version will focus on a small, well-defined scope and will be expand
 ## High-Level Design
 
 - [`design.md`](./docs/hld/design.md)
+
+## Low-Level Design
+
+- [`database.md`](./docs/lld/database.md)
+- [`api.md`](./docs/lld/api.md)
