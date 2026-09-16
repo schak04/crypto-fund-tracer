@@ -1,4 +1,4 @@
-# System Design
+# High-Level Design
 
 ## Architecture
 
