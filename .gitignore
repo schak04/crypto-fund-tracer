@@ -1,2 +1,4 @@
 plan*
 *draft*
+.env
+!.env.example
