@@ -29,12 +29,12 @@ Represents one analysis request.
 
 Fields:
 
-- `id` (uuid, primary key): unique identifier for the investigation
-- `status` (text): current state of the investigation
-- `created_at` (timestamp): timestamp when the investigation was created
-- `completed_at` (timestamp): timestamp when the investigation finished processing
+- `id` (uuid, primary key): unique identifier for the investigation, generated via `gen_random_uuid()`
+- `status` (text, not null): current state of the investigation with check constraint
+- `created_at` (timestamptz, not null): timestamp when the investigation was created (default `now()`)
+- `completed_at` (timestamptz, nullable): timestamp when the investigation finished processing
 
-Possible statuses:
+Valid statuses (enforced via `CHECK (status IN ('pending', 'running', 'completed', 'failed'))`):
 
 ```
 pending
@@ -51,11 +51,11 @@ Stores unique blockchain addresses encountered during an investigation.
 
 Fields:
 
-- `id` (uuid, primary key): unique identifier for the address record
-- `address` (text): blockchain address value
-- `created_at` (timestamp): timestamp when the address record was created
+- `id` (uuid, primary key): unique identifier for the address record, generated via `gen_random_uuid()`
+- `address` (text, not null, unique): blockchain address value
+- `created_at` (timestamptz, not null): timestamp when the address record was created (default `now()`)
 
-The same address may appear in multiple investigations, so addresses should not be duplicated unnecessarily. In line with the single-blockchain MVP scope, an address is uniquely identified by its address value.
+The same address may appear in multiple investigations, so addresses are not duplicated. An address is uniquely identified by its address value.
 
 ## Transaction
 
@@ -64,11 +64,11 @@ Stores relevant transaction information returned by the blockchain-analysis comp
 Fields:
 
 - `tx_hash` (text, primary key): blockchain transaction identifier
-- `tx_time` (timestamp): time the transaction was confirmed or recorded
-- `amount` (numeric): transaction value or transfer amount
-- `raw_reference` (text): reference to raw transaction data or payload
+- `tx_time` (timestamptz, not null): time the transaction was confirmed or recorded
+- `amount` (numeric, not null): transaction value or transfer amount
+- `raw_reference` (text, not null, default `''`): reference to raw transaction data or payload
 
-The MVP should store only the transaction information required by the application.
+The MVP stores only the transaction information required by the application.
 
 ## Investigation Address
 
@@ -76,11 +76,13 @@ Associates an address with an investigation and records its role.
 
 Fields:
 
-- `investigation_id` (uuid, foreign key -> investigation.id): associated investigation
-- `address_id` (uuid, foreign key -> address.id): associated address
-- `role` (text): role of the address within the investigation
+- `investigation_id` (uuid, foreign key -> investigation.id ON DELETE CASCADE)
+- `address_id` (uuid, foreign key -> address.id ON DELETE CASCADE)
+- `role` (text, not null): role of the address within the investigation with check constraint
 
-Example roles:
+Primary key: `(investigation_id, address_id)`
+
+Valid roles (enforced via `CHECK (role IN ('suspect', 'intermediary', 'destination', 'other'))`):
 
 ```
 suspect
@@ -95,9 +97,11 @@ Associates a transaction with an investigation.
 
 Fields:
 
-- `investigation_id` (uuid, foreign key -> investigation.id): associated investigation
-- `tx_hash` (text, foreign key -> transaction.tx_hash): associated transaction
-- `trace_depth` (int): hop distance from the suspect address
+- `investigation_id` (uuid, foreign key -> investigation.id ON DELETE CASCADE)
+- `tx_hash` (text, foreign key -> transaction.tx_hash ON DELETE CASCADE)
+- `trace_depth` (int, not null, default 1): hop distance from the suspect address
+
+Primary key: `(investigation_id, tx_hash)`
 
 The trace depth allows the application to distinguish between transactions directly related to the suspect address and transactions discovered further along the trace.
 
@@ -107,12 +111,13 @@ Represents a movement of funds from one address to another within a relevant tra
 
 Fields:
 
-- `tx_hash` (text, foreign key -> transaction.tx_hash): associated transaction
-- `source_address_id` (uuid, foreign key -> address.id): originating address
-- `destination_address_id` (uuid, foreign key -> address.id): receiving address
-- `amount` (numeric): amount transferred along this edge
+- `id` (uuid, primary key): unique identifier for the edge, generated via `gen_random_uuid()`
+- `tx_hash` (text, foreign key -> transaction.tx_hash ON DELETE CASCADE)
+- `source_address_id` (uuid, foreign key -> address.id ON DELETE CASCADE): originating address
+- `destination_address_id` (uuid, foreign key -> address.id ON DELETE CASCADE): receiving address
+- `amount` (numeric, not null): amount transferred along this edge
 
-This provides a simple representation of the fund-flow graph.
+This provides a direct, queryable representation of the fund-flow graph.
 
 ## VASP
 
@@ -120,9 +125,10 @@ Represents a known exchange or other VASP.
 
 Fields:
 
-- `id` (uuid, primary key): unique identifier for the VASP
-- `name` (text): name of the exchange or entity
-- `type` (text): category of the entity (e.g. exchange)
+- `id` (uuid, primary key): unique identifier for the VASP, generated via `gen_random_uuid()`
+- `name` (text, not null, unique): name of the exchange or entity
+- `type` (text, not null): category of the entity (e.g. `exchange`)
+- `created_at` (timestamptz, not null): timestamp when the entity record was created (default `now()`)
 
 The MVP does not attempt to maintain a complete global VASP registry.
 
@@ -132,21 +138,19 @@ Associates a known blockchain address with a VASP.
 
 Fields:
 
-- `vasp_id` (uuid, foreign key -> vasp.id): associated VASP entity
-- `address_id` (uuid, foreign key -> address.id): associated blockchain address
-- `attribution_status` (text): attribution confidence or classification
+- `vasp_id` (uuid, foreign key -> vasp.id ON DELETE CASCADE)
+- `address_id` (uuid, foreign key -> address.id ON DELETE CASCADE)
+- `attribution_status` (text, not null): attribution confidence or classification with check constraint
 
-The attribution status can represent how strongly the address is associated with that entity.
+Primary key: `(vasp_id, address_id)`
 
-For example:
+Valid attribution statuses (enforced via `CHECK (attribution_status IN ('known', 'probable', 'unverified'))`):
 
 ```
 known
 probable
 unverified
 ```
-
-The exact attribution model is yet to be decided.
 
 ## Important Database Principles
 
@@ -166,23 +170,43 @@ A known address association should represent evidence or attribution information
 
 Transaction hashes and relevant transaction details should be retained so that an investigator can inspect the basis of the result.
 
-## Indexing
+## Indexing Strategy
 
-Indexes should be added for fields that are frequently queried.
+Indexes are defined for foreign key lookups, graph traversals, and query filters. Leading columns of composite primary keys provide natural indexing for those columns, while secondary indexes cover lookups on the remaining foreign keys:
 
-At least on:
+| Index Name | Table | Columns | Purpose |
+| :--- | :--- | :--- | :--- |
+| `idx_investigation_created_at` | `investigation` | `created_at` | Chronological ordering of investigations |
+| `idx_investigation_status` | `investigation` | `status` | Filtering active, running, or pending jobs |
+| `idx_investigation_address_address_id` | `investigation_address` | `address_id` | Reverse lookup of investigations by address |
+| `idx_investigation_transaction_tx_hash` | `investigation_transaction` | `tx_hash` | Reverse lookup of investigations by transaction |
+| `idx_transaction_edge_tx_hash` | `transaction_edge` | `tx_hash` | Edge lookups by transaction identifier |
+| `idx_transaction_edge_source_address_id` | `transaction_edge` | `source_address_id` | Graph forward traversal (outgoing fund flows) |
+| `idx_transaction_edge_destination_address_id` | `transaction_edge` | `destination_address_id` | Graph backward traversal (incoming fund flows) |
+| `idx_vasp_address_address_id` | `vasp_address` | `address_id` | Attribution lookups for a given address |
 
-- investigation creation time (`investigation.created_at`)
-- investigation status (`investigation.status`)
-- address value (`address.address`)
-- investigation/address relationships (`investigation_address.investigation_id`, `investigation_address.address_id`)
-- investigation/transaction relationships (`investigation_transaction.investigation_id`, `investigation_transaction.tx_hash`)
-- transaction edge addresses and transactions (`transaction_edge.tx_hash`, `transaction_edge.source_address_id`, `transaction_edge.destination_address_id`)
-- VASP address mappings (`vasp_address.address_id`, `vasp_address.vasp_id`)
+## Migrations and Tooling
 
-Indexes should be added based on actual query requirements rather than adding indexes to every column.
+The schema is managed through database migrations rather than manual schema alterations.
 
-## Migrations
+- Tooling: `pressly/goose` CLI.
+- Location: `migrations/` directory at repository root.
+- Convention: Sequential SQL files with `-- +goose Up` and `-- +goose Down` statements (`00001_initial_schema.sql`).
+- Commands (via `Makefile`):
+  - `make migrate-status`: View applied and pending migrations.
+  - `make migrate-up`: Apply all pending migrations.
+  - `make migrate-down`: Roll back the most recent migration.
+  - `make migrate-create NAME=<name>`: Scaffold a new SQL migration file.
 
-The schema should be managed through database migrations rather than manually creating the production schema.
-Each schema change should have a corresponding migration.
+## Connection Management and Pooling
+
+Database connectivity is managed through `github.com/jackc/pgx/v5/pgxpool`:
+
+- Initialisation enforces fail-fast validation via an immediate `Ping(ctx)` on application startup.
+- Connection limits and timeouts:
+  - `MaxConns`: 25
+  - `MinConns`: 2
+  - `MaxConnLifetime`: 1 hour
+  - `MaxConnIdleTime`: 15 minutes
+  - `HealthCheckPeriod`: 1 minute
+- The connection pool is instantiated in `cmd/api/main.go` and closed gracefully on shutdown.
