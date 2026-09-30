@@ -1,6 +1,14 @@
 -include .env
 export
 
+# NOTE:
+# Go CLI tools installed with `go install` (such as `goose`) are placed
+# in `$GOPATH/bin`. The shell only finds commands in directories listed
+# in PATH, so `$GOPATH/bin` is added here. Otherwise `goose` may be installed
+# correctly but `make migrate-*` would fail because the command cannot be found.
+GOPATH ?= $(shell go env GOPATH)
+export PATH := $(GOPATH)/bin:$(PATH)
+
 .PHONY: help run test db-ping db-shell db-status migrate-install migrate-status migrate-up migrate-down migrate-create
 
 help:
