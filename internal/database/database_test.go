@@ -53,3 +53,50 @@ func TestConnect_ValidIntegration(t *testing.T) {
 		t.Fatalf("expected 1, got %d", result)
 	}
 }
+
+func TestSchema_TablesExist(t *testing.T) {
+	dsn := os.Getenv("CFT_DB_URL")
+	if dsn == "" {
+		t.Skip("CFT_DB_URL not set, skipping schema integration test")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	pool, err := Connect(ctx, dsn)
+	if err != nil {
+		t.Fatalf("connecting to database: %v", err)
+	}
+	defer pool.Close()
+
+	expectedTables := []string{
+		"investigation",
+		"address",
+		"investigation_address",
+		"transaction",
+		"investigation_transaction",
+		"transaction_edge",
+		"vasp",
+		"vasp_address",
+	}
+
+	for _, table := range expectedTables {
+		var exists bool
+
+		// NOTE: information_schema.tables is PostgreSQL's metadata describing tables in the database
+		query := `SELECT EXISTS (
+			SELECT FROM information_schema.tables 
+			WHERE table_schema = 'public' AND table_name = $1
+		)`
+
+		// NOTE: table_name = $1 -> a parameterised query
+		// $1 gets replaced by whatever table is passed to pool.QueryRow(ctx, query, table)
+		if err := pool.QueryRow(ctx, query, table).Scan(&exists); err != nil {
+			t.Fatalf("checking table %s: %v", table, err)
+		}
+
+		if !exists {
+			t.Errorf("expected table %s to exist", table)
+		}
+	}
+}

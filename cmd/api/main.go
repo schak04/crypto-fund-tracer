@@ -20,7 +20,6 @@ func main() {
 	}
 }
 
-// NOTE:
 // Inits the app dependencies and performs startup checks.
 // Keeping startup logic here makes main responsible only for handling the
 // final success or failure of the application.

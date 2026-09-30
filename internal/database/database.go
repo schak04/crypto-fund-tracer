@@ -34,7 +34,6 @@ func DefaultConfig() Config {
 	}
 }
 
-// NOTE:
 // Parses the PostgreSQL DSN, configures a connection pool,
 // verifies database connectivity, and returns a ready-to-use pool.
 // This ensures callers receive a pool that has already passed a connectivity check.
