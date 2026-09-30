@@ -33,6 +33,7 @@ Fields:
 - `status` (text, not null): current state of the investigation with check constraint
 - `created_at` (timestamptz, not null): timestamp when the investigation was created (default `now()`)
 - `completed_at` (timestamptz, nullable): timestamp when the investigation finished processing
+- `failure_reason` (text, nullable): explanation of the failure if status is `failed`
 
 Valid statuses (enforced via `CHECK (status IN ('pending', 'running', 'completed', 'failed'))`):
 
@@ -174,16 +175,16 @@ Transaction hashes and relevant transaction details should be retained so that a
 
 Indexes are defined for foreign key lookups, graph traversals, and query filters. Leading columns of composite primary keys provide natural indexing for those columns, while secondary indexes cover lookups on the remaining foreign keys:
 
-| Index Name | Table | Columns | Purpose |
-| :--- | :--- | :--- | :--- |
-| `idx_investigation_created_at` | `investigation` | `created_at` | Chronological ordering of investigations |
-| `idx_investigation_status` | `investigation` | `status` | Filtering active, running, or pending jobs |
-| `idx_investigation_address_address_id` | `investigation_address` | `address_id` | Reverse lookup of investigations by address |
-| `idx_investigation_transaction_tx_hash` | `investigation_transaction` | `tx_hash` | Reverse lookup of investigations by transaction |
-| `idx_transaction_edge_tx_hash` | `transaction_edge` | `tx_hash` | Edge lookups by transaction identifier |
-| `idx_transaction_edge_source_address_id` | `transaction_edge` | `source_address_id` | Graph forward traversal (outgoing fund flows) |
-| `idx_transaction_edge_destination_address_id` | `transaction_edge` | `destination_address_id` | Graph backward traversal (incoming fund flows) |
-| `idx_vasp_address_address_id` | `vasp_address` | `address_id` | Attribution lookups for a given address |
+| Index Name                                    | Table                       | Columns                  | Purpose                                         |
+| :-------------------------------------------- | :-------------------------- | :----------------------- | :---------------------------------------------- |
+| `idx_investigation_created_at`                | `investigation`             | `created_at`             | Chronological ordering of investigations        |
+| `idx_investigation_status`                    | `investigation`             | `status`                 | Filtering active, running, or pending jobs      |
+| `idx_investigation_address_address_id`        | `investigation_address`     | `address_id`             | Reverse lookup of investigations by address     |
+| `idx_investigation_transaction_tx_hash`       | `investigation_transaction` | `tx_hash`                | Reverse lookup of investigations by transaction |
+| `idx_transaction_edge_tx_hash`                | `transaction_edge`          | `tx_hash`                | Edge lookups by transaction identifier          |
+| `idx_transaction_edge_source_address_id`      | `transaction_edge`          | `source_address_id`      | Graph forward traversal (outgoing fund flows)   |
+| `idx_transaction_edge_destination_address_id` | `transaction_edge`          | `destination_address_id` | Graph backward traversal (incoming fund flows)  |
+| `idx_vasp_address_address_id`                 | `vasp_address`              | `address_id`             | Attribution lookups for a given address         |
 
 ## Migrations and Tooling
 
