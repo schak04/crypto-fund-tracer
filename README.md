@@ -28,7 +28,7 @@ The initial version will focus on a small, well-defined scope and will be expand
 
 ### High-Level Design
 
-- [`design.md`](./docs/hld/design.md)
+- [`design.md`](./docs/hld/architecture.md)
 
 ### Low-Level Design
 
