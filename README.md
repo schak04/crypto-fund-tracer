@@ -35,3 +35,7 @@ The initial version will focus on a small, well-defined scope and will be expand
 - [`database.md`](./docs/lld/database.md)
 - [`api.md`](./docs/lld/api.md)
 - [`config.md`](./docs/lld/config.md)
+
+## References
+
+- https://pkg.go.dev/github.com/jackc/pgx/v5
