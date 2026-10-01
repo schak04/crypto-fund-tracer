@@ -41,3 +41,4 @@ The initial version will focus on a small, well-defined scope and will be expand
 - https://pkg.go.dev/github.com/jackc/pgx/v5
 - https://pkg.go.dev/github.com/pressly/goose/v3
 - https://pkg.go.dev/context
+- https://ethereum.stackexchange.com/questions/11572/how-does-the-keccak256-hash-function-work
