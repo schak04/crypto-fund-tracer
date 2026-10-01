@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS investigation (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'completed', 'failed')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    completed_at TIMESTAMPTZ
+    completed_at TIMESTAMPTZ,
+    failure_reason TEXT
 );
 
 CREATE INDEX idx_investigation_created_at ON investigation(created_at);
