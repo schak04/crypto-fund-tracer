@@ -5,12 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/schak04/crypto-fund-tracer/internal/api"
 	"github.com/schak04/crypto-fund-tracer/internal/config"
 	"github.com/schak04/crypto-fund-tracer/internal/database"
+	"github.com/schak04/crypto-fund-tracer/internal/repository"
+	"github.com/schak04/crypto-fund-tracer/internal/service"
 )
 
 func main() {
@@ -20,9 +26,7 @@ func main() {
 	}
 }
 
-// Inits the app dependencies and performs startup checks.
-// Keeping startup logic here makes main responsible only for handling the
-// final success or failure of the application.
+// inits the app dependencies, wires the composition root, and manages server lifecycle
 func run() error {
 	if err := godotenv.Load(); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("loading .env: %w", err)
@@ -44,5 +48,36 @@ func run() error {
 
 	slog.Info("connected to database", "host", pool.Config().ConnConfig.Host, "database", pool.Config().ConnConfig.Database)
 
-	return nil
+	repo := repository.New(pool)
+	svc := service.New(repo)
+	handler := api.NewHandler(svc)
+
+	srv := &http.Server{
+		Addr:         cfg.HTTPAddr,
+		Handler:      handler.Routes(),
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	shutdownCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	serverErr := make(chan error, 1)
+	go func() {
+		slog.Info("starting HTTP server", "addr", cfg.HTTPAddr)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			serverErr <- err
+		}
+	}()
+
+	select {
+	case err := <-serverErr:
+		return fmt.Errorf("http server failed: %w", err)
+	case <-shutdownCtx.Done():
+		slog.Info("shutting down HTTP server")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return srv.Shutdown(ctx)
+	}
 }
