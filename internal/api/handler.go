@@ -46,13 +46,12 @@ func (h *Handler) CreateInvestigation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inv, err := h.svc.CreateInvestigation(r.Context(), req.WalletAddress)
-	if err != nil {
-		_ = apperror.WriteJSON(w, err)
-		return
+	depth := 0
+	if req.MaxDepth != nil {
+		depth = *req.MaxDepth
 	}
 
-	details, err := h.svc.GetInvestigation(r.Context(), inv.ID)
+	details, err := h.svc.CreateAndRunInvestigation(r.Context(), req.WalletAddress, depth)
 	if err != nil {
 		_ = apperror.WriteJSON(w, err)
 		return

@@ -330,3 +330,95 @@ func TestInvestigationService_FailInvestigation_RepoError(t *testing.T) {
 		t.Fatalf("expected wrapped repo error, got: %v", err)
 	}
 }
+
+type mockOrchestrator struct {
+	runAnalysisFunc func(ctx context.Context, investigationID, walletAddress string, maxDepth int) (*repository.InvestigationDetails, error)
+}
+
+func (m *mockOrchestrator) RunAnalysis(ctx context.Context, investigationID, walletAddress string, maxDepth int) (*repository.InvestigationDetails, error) {
+	if m.runAnalysisFunc != nil {
+		return m.runAnalysisFunc(ctx, investigationID, walletAddress, maxDepth)
+	}
+	return nil, errors.New("unexpected call to RunAnalysis")
+}
+
+func TestInvestigationService_CreateAndRunInvestigation_WithOrchestrator(t *testing.T) {
+	expectedID := "inv-run-1"
+	expectedSuspect := "0x1234567890abcdef"
+	now := time.Now().UTC()
+
+	mockRepo := &mockRepository{
+		createInvestigationFunc: func(ctx context.Context, suspectAddress string, initialStatus string) (*repository.Investigation, error) {
+			return &repository.Investigation{
+				ID:        expectedID,
+				Status:    repository.StatusRunning,
+				CreatedAt: now,
+			}, nil
+		},
+	}
+
+	orchestratorCalled := false
+	mockOrch := &mockOrchestrator{
+		runAnalysisFunc: func(ctx context.Context, investigationID, walletAddress string, maxDepth int) (*repository.InvestigationDetails, error) {
+			orchestratorCalled = true
+			if investigationID != expectedID {
+				t.Fatalf("expected ID %s, got %s", expectedID, investigationID)
+			}
+			if walletAddress != expectedSuspect {
+				t.Fatalf("expected suspect %s, got %s", expectedSuspect, walletAddress)
+			}
+			if maxDepth != 3 {
+				t.Fatalf("expected depth 3, got %d", maxDepth)
+			}
+			return &repository.InvestigationDetails{
+				ID:             expectedID,
+				Status:         repository.StatusCompleted,
+				SuspectAddress: expectedSuspect,
+			}, nil
+		},
+	}
+
+	svc := New(mockRepo, mockOrch)
+	details, err := svc.CreateAndRunInvestigation(context.Background(), expectedSuspect, 3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !orchestratorCalled {
+		t.Fatal("expected orchestrator to be called")
+	}
+	if details.ID != expectedID || details.Status != repository.StatusCompleted {
+		t.Fatalf("unexpected details: %v", details)
+	}
+}
+
+func TestInvestigationService_CreateAndRunInvestigation_WithoutOrchestrator(t *testing.T) {
+	expectedID := "inv-run-2"
+	expectedSuspect := "0x1234567890abcdef"
+	now := time.Now().UTC()
+
+	mockRepo := &mockRepository{
+		createInvestigationFunc: func(ctx context.Context, suspectAddress string, initialStatus string) (*repository.Investigation, error) {
+			return &repository.Investigation{
+				ID:        expectedID,
+				Status:    repository.StatusRunning,
+				CreatedAt: now,
+			}, nil
+		},
+		getInvestigationFunc: func(ctx context.Context, id string) (*repository.InvestigationDetails, error) {
+			return &repository.InvestigationDetails{
+				ID:             expectedID,
+				Status:         repository.StatusRunning,
+				SuspectAddress: expectedSuspect,
+			}, nil
+		},
+	}
+
+	svc := New(mockRepo)
+	details, err := svc.CreateAndRunInvestigation(context.Background(), expectedSuspect, 3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if details.ID != expectedID || details.Status != repository.StatusRunning {
+		t.Fatalf("unexpected details: %v", details)
+	}
+}

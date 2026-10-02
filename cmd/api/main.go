@@ -15,6 +15,7 @@ import (
 	"github.com/schak04/crypto-fund-tracer/internal/api"
 	"github.com/schak04/crypto-fund-tracer/internal/config"
 	"github.com/schak04/crypto-fund-tracer/internal/database"
+	"github.com/schak04/crypto-fund-tracer/internal/orchestrator"
 	"github.com/schak04/crypto-fund-tracer/internal/repository"
 	"github.com/schak04/crypto-fund-tracer/internal/service"
 )
@@ -49,7 +50,9 @@ func run() error {
 	slog.Info("connected to database", "host", pool.Config().ConnConfig.Host, "database", pool.Config().ConnConfig.Database)
 
 	repo := repository.New(pool)
-	svc := service.New(repo)
+	analysisClient := orchestrator.NewHTTPAnalysisClient(cfg.AnalysisURL, nil)
+	analysisOrch := orchestrator.New(analysisClient, repo)
+	svc := service.New(repo, analysisOrch)
 	handler := api.NewHandler(svc)
 
 	srv := &http.Server{

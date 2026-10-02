@@ -16,23 +16,36 @@ var (
 	ErrInvalidFailureReason   = errors.New("failure reason is required")
 )
 
-// Service defines the business contract for managing investigation lifecycles.
-// Handlers and orchestrators depend on this interface rather than concrete implementations.
+// boundary for executing blockchain analysis
+type Orchestrator interface {
+	RunAnalysis(ctx context.Context, investigationID, walletAddress string, maxDepth int) (*repository.InvestigationDetails, error)
+}
+
+// business contract for managing investigation lifecycles
 type Service interface {
 	CreateInvestigation(ctx context.Context, suspectAddress string) (*repository.Investigation, error)
+	CreateAndRunInvestigation(ctx context.Context, suspectAddress string, maxDepth int) (*repository.InvestigationDetails, error)
 	GetInvestigation(ctx context.Context, id string) (*repository.InvestigationDetails, error)
 	SaveInvestigationResult(ctx context.Context, id string, params repository.SaveAnalysisParams) error
 	FailInvestigation(ctx context.Context, id string, reason string) error
 }
 
 type InvestigationService struct {
-	repo repository.Repository
+	repo         repository.Repository
+	orchestrator Orchestrator
 }
 
 var _ Service = (*InvestigationService)(nil)
 
-func New(repo repository.Repository) *InvestigationService {
-	return &InvestigationService{repo: repo}
+func New(repo repository.Repository, orchestrator ...Orchestrator) *InvestigationService {
+	var orch Orchestrator
+	if len(orchestrator) > 0 {
+		orch = orchestrator[0]
+	}
+	return &InvestigationService{
+		repo:         repo,
+		orchestrator: orch,
+	}
 }
 
 func (s *InvestigationService) CreateInvestigation(ctx context.Context, suspectAddress string) (*repository.Investigation, error) {
@@ -49,6 +62,19 @@ func (s *InvestigationService) CreateInvestigation(ctx context.Context, suspectA
 	}
 
 	return inv, nil
+}
+
+func (s *InvestigationService) CreateAndRunInvestigation(ctx context.Context, suspectAddress string, maxDepth int) (*repository.InvestigationDetails, error) {
+	inv, err := s.CreateInvestigation(ctx, suspectAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.orchestrator != nil {
+		return s.orchestrator.RunAnalysis(ctx, inv.ID, suspectAddress, maxDepth)
+	}
+
+	return s.GetInvestigation(ctx, inv.ID)
 }
 
 func (s *InvestigationService) GetInvestigation(ctx context.Context, id string) (*repository.InvestigationDetails, error) {

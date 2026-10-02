@@ -16,10 +16,11 @@ import (
 )
 
 type mockService struct {
-	createInvestigationFunc func(ctx context.Context, suspectAddress string) (*repository.Investigation, error)
-	getInvestigationFunc    func(ctx context.Context, id string) (*repository.InvestigationDetails, error)
-	saveResultFunc          func(ctx context.Context, id string, params repository.SaveAnalysisParams) error
-	failInvestigationFunc   func(ctx context.Context, id string, reason string) error
+	createInvestigationFunc       func(ctx context.Context, suspectAddress string) (*repository.Investigation, error)
+	createAndRunInvestigationFunc func(ctx context.Context, suspectAddress string, maxDepth int) (*repository.InvestigationDetails, error)
+	getInvestigationFunc          func(ctx context.Context, id string) (*repository.InvestigationDetails, error)
+	saveResultFunc                func(ctx context.Context, id string, params repository.SaveAnalysisParams) error
+	failInvestigationFunc         func(ctx context.Context, id string, reason string) error
 }
 
 func (m *mockService) CreateInvestigation(ctx context.Context, suspectAddress string) (*repository.Investigation, error) {
@@ -27,6 +28,17 @@ func (m *mockService) CreateInvestigation(ctx context.Context, suspectAddress st
 		return m.createInvestigationFunc(ctx, suspectAddress)
 	}
 	return nil, errors.New("unexpected call to CreateInvestigation")
+}
+
+func (m *mockService) CreateAndRunInvestigation(ctx context.Context, suspectAddress string, maxDepth int) (*repository.InvestigationDetails, error) {
+	if m.createAndRunInvestigationFunc != nil {
+		return m.createAndRunInvestigationFunc(ctx, suspectAddress, maxDepth)
+	}
+	inv, err := m.CreateInvestigation(ctx, suspectAddress)
+	if err != nil {
+		return nil, err
+	}
+	return m.GetInvestigation(ctx, inv.ID)
 }
 
 func (m *mockService) GetInvestigation(ctx context.Context, id string) (*repository.InvestigationDetails, error) {
@@ -259,6 +271,45 @@ func TestHandler_CreateInvestigation_ServiceError(t *testing.T) {
 	}
 	if errResp.Error.Code != apperror.CodeInternalError {
 		t.Fatalf("expected code %s, got %s", apperror.CodeInternalError, errResp.Error.Code)
+	}
+}
+
+func TestHandler_CreateInvestigation_OrchestrationFailure_502(t *testing.T) {
+	invID := "inv-failed-123"
+	mock := &mockService{
+		createAndRunInvestigationFunc: func(ctx context.Context, suspectAddress string, maxDepth int) (*repository.InvestigationDetails, error) {
+			cause := errors.New("provider timeout")
+			return nil, apperror.NewAnalysisServiceError("Blockchain analysis component failed to complete fund tracing: provider timeout.", invID, cause)
+		},
+	}
+
+	h := NewHandler(mock)
+	server := httptest.NewServer(h.Routes())
+	defer server.Close()
+
+	payload := []byte(`{"wallet_address":"0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed"}`)
+	req, _ := http.NewRequest(http.MethodPost, server.URL+"/api/v1/investigations", bytes.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("request failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Fatalf("expected status 502, got %d", resp.StatusCode)
+	}
+
+	var errResp apperror.Response
+	if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
+		t.Fatalf("decoding error response: %v", err)
+	}
+	if errResp.Error.Code != apperror.CodeAnalysisServiceError {
+		t.Fatalf("expected code %s, got %s", apperror.CodeAnalysisServiceError, errResp.Error.Code)
+	}
+	if errResp.Error.InvestigationID != invID {
+		t.Fatalf("expected investigation ID %s, got %s", invID, errResp.Error.InvestigationID)
 	}
 }
 
