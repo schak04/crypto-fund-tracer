@@ -10,65 +10,22 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/schak04/crypto-fund-tracer/internal/analysis"
 )
 
-// payload sent to POST /analysis
-type AnalysisRequest struct {
-	WalletAddress string `json:"wallet_address"`
-	MaxDepth      int    `json:"max_depth"`
-}
+// re-export contract types from internal/analysis
+type AnalysisRequest = analysis.Request
+type AnalysisResponse = analysis.Response
+type AddressItem = analysis.AddressItem
+type TransactionItem = analysis.TransactionItem
+type FlowEdgeItem = analysis.FlowEdgeItem
+type VASPAttributionItem = analysis.VASPAttributionItem
+type AnalysisErrorResponse = analysis.ErrorResponse
 
-// an address and its discovered role
-type AddressItem struct {
-	Address string `json:"address"`
-	Role    string `json:"role"`
-}
-
-// a normalized transaction returned from tracing
-type TransactionItem struct {
-	TxHash       string    `json:"tx_hash"`
-	TxTime       time.Time `json:"tx_time"`
-	Amount       string    `json:"amount"`
-	TraceDepth   int       `json:"trace_depth"`
-	RawReference string    `json:"raw_reference"`
-}
-
-// a directed fund transfer between two addresses
-type FlowEdgeItem struct {
-	TxHash             string `json:"tx_hash"`
-	SourceAddress      string `json:"source_address"`
-	DestinationAddress string `json:"destination_address"`
-	Amount             string `json:"amount"`
-}
-
-// exchange or entity attribution details
-type VASPAttributionItem struct {
-	Name              string `json:"name"`
-	Type              string `json:"type"`
-	MatchedAddress    string `json:"matched_address"`
-	AttributionStatus string `json:"attribution_status"`
-}
-
-// the structured analysis graph returned by the analysis component
-type AnalysisResponse struct {
-	WalletAddress   string               `json:"wallet_address"`
-	Addresses       []AddressItem        `json:"addresses"`
-	Transactions    []TransactionItem    `json:"transactions"`
-	FundFlow        []FlowEdgeItem       `json:"fund_flow"`
-	VASPAttribution *VASPAttributionItem `json:"vasp_attribution"`
-}
-
-// failure payloads returned by the analysis component
-type AnalysisErrorResponse struct {
-	Error struct {
-		Code    string `json:"code"`
-		Message string `json:"message"`
-	} `json:"error"`
-}
-
-// the integration boundary to the blockchain-analysis component
+// integration boundary to the blockchain-analysis component
 type AnalysisClient interface {
-	Analyze(ctx context.Context, req AnalysisRequest) (*AnalysisResponse, error)
+	Analyze(ctx context.Context, req analysis.Request) (*analysis.Response, error)
 }
 
 // communicates with the blockchain analysis service via HTTP
@@ -87,8 +44,8 @@ func NewHTTPAnalysisClient(baseURL string, client *http.Client) *HTTPAnalysisCli
 	}
 }
 
-func (c *HTTPAnalysisClient) Analyze(ctx context.Context, req AnalysisRequest) (*AnalysisResponse, error) {
-	endpoint := c.baseURL + "/analysis"
+func (c *HTTPAnalysisClient) Analyze(ctx context.Context, req analysis.Request) (*analysis.Response, error) {
+	endpoint := c.baseURL + analysis.EndpointAnalysis
 	bodyBytes, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("marshaling analysis request: %w", err)
@@ -112,14 +69,14 @@ func (c *HTTPAnalysisClient) Analyze(ctx context.Context, req AnalysisRequest) (
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		var errPayload AnalysisErrorResponse
+		var errPayload analysis.ErrorResponse
 		if jsonErr := json.Unmarshal(body, &errPayload); jsonErr == nil && errPayload.Error.Message != "" {
 			return nil, fmt.Errorf("%s: %s", errPayload.Error.Code, errPayload.Error.Message)
 		}
 		return nil, fmt.Errorf("analysis service returned status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var analysisResp AnalysisResponse
+	var analysisResp analysis.Response
 	if err := json.Unmarshal(body, &analysisResp); err != nil {
 		return nil, fmt.Errorf("decoding analysis response: %w", err)
 	}
