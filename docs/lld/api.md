@@ -355,6 +355,9 @@ Occurs during synchronous MVP execution when the analysis component or blockchai
 
 The Go backend coordinates with the blockchain-analysis component over an internal language-independent HTTP interface.
 
+> [!NOTE]  
+> For full schema specifications, depth traversal semantics, and error behaviour, the dedicated Blockchain Analysis Integration Contract is being written.
+
 ### Analysis Endpoint
 
 ```http
