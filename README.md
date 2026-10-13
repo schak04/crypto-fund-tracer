@@ -19,6 +19,9 @@ Crypto Fund Tracer automates this process by:
 
 The application is split across two primary layers:
 
+1. Application + Data-Access
+2. Blockchain Analysis
+
 ![architecture](docs/diagrams/architecture.png)
 
 ## Team Responsibilities
