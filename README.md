@@ -37,6 +37,8 @@ The project is divided between two subsystems:
 - Persists all entities (addresses, transactions, fund-flow edges, VASP attributions) atomically in PostgreSQL.
 - Manages database schemas and migrations via Goose.
 
+**Developer:** [Saptaparno Chakraborty](https://github.com/schak04)
+
 ### Blockchain Analysis Layer
 
 - Implements an HTTP server listening for requests at `POST /analysis`.
@@ -46,6 +48,11 @@ The project is divided between two subsystems:
 - Categorises address roles (`suspect`, `intermediary`, `destination`, `other`).
 - Matches destination addresses against a dataset of known exchange and VASP addresses.
 - Returns structured JSON to the Go backend conforming to the integration contract.
+
+**Developers:**
+
+- [Sakshi](https://github.com/sakshik2023)
+- [Arghadeep Bera](https://github.com/argha0203)
 
 ## Integration Contract
 
