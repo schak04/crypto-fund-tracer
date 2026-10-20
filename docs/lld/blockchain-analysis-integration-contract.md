@@ -50,6 +50,9 @@ It establishes the data schemas, transport protocols, depth semantics, entity re
 
 ## 4. Request / Input Structure
 
+> [!IMPORTANT]  
+> The wallet addresses and transaction hashes shown in the schemas and examples below are synthetic sample fixtures and public test vectors (including canonical EIP-55 fixtures and public exchange addresses). They are used solely for format illustration and local integration testing, and do not represent active investigations or private personal data.
+
 ### Schema
 
 ```json

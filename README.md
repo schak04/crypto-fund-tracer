@@ -67,6 +67,9 @@ Key architectural constraints for the Blockchain Analysis service:
 - **Timestamps**: All transaction confirmation timestamps must follow ISO 8601 UTC (`YYYY-MM-DDTHH:MM:SSZ`).
 - **Execution timeout**: Analysis requests must complete within 30 seconds for MVP execution.
 
+> [!IMPORTANT]  
+> The wallet addresses and transaction hashes shown in the schemas and examples below are synthetic sample fixtures and public test vectors (including canonical EIP-55 fixtures and public exchange addresses). They are used solely for format illustration and local integration testing, and do not represent active investigations or private personal data.
+
 ### Request Schema (`POST /analysis`)
 
 ```json
