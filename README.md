@@ -28,7 +28,7 @@ The application is split across two primary layers:
 
 The project is divided between two subsystems:
 
-### Application and Data-Access Layer (Go Backend)
+### Application and Data-Access Layer (Go Backend) - [Saptaparno Chakraborty](https://github.com/schak04)
 
 - Exposes public REST endpoints (`POST /api/v1/investigations`, `GET /api/v1/investigations/{id}`).
 - Performs request validation, including Ethereum address format and Keccak-256 checksum verification.
@@ -37,9 +37,7 @@ The project is divided between two subsystems:
 - Persists all entities (addresses, transactions, fund-flow edges, VASP attributions) atomically in PostgreSQL.
 - Manages database schemas and migrations via Goose.
 
-**Developer:** [Saptaparno Chakraborty](https://github.com/schak04)
-
-### Blockchain Analysis Layer
+### Blockchain Analysis Layer - [Sakshi](https://github.com/sakshik2023)
 
 - Implements an HTTP server listening for requests at `POST /analysis`.
 - Connects to blockchain RPC nodes or explorer APIs to retrieve raw transaction history.
@@ -48,11 +46,6 @@ The project is divided between two subsystems:
 - Categorises address roles (`suspect`, `intermediary`, `destination`, `other`).
 - Matches destination addresses against a dataset of known exchange and VASP addresses.
 - Returns structured JSON to the Go backend conforming to the integration contract.
-
-**Developers:**
-
-- [Sakshi](https://github.com/sakshik2023)
-- [Arghadeep Bera](https://github.com/argha0203)
 
 ## Integration Contract
 
