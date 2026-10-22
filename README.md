@@ -26,26 +26,26 @@ The application is split across two primary layers:
 
 ## Team Responsibilities
 
-The project is divided between two subsystems:
-
 ### Application and Data-Access Layer (Go Backend) - [Saptaparno Chakraborty](https://github.com/schak04)
 
-- Exposes public REST endpoints (`POST /api/v1/investigations`, `GET /api/v1/investigations/{id}`).
-- Performs request validation, including Ethereum address format and Keccak-256 checksum verification.
-- Manages investigation states (`pending`, `running`, `completed`, `failed`).
-- Dispatches analysis requests to the Blockchain Analysis component via HTTP `POST /analysis`.
-- Persists all entities (addresses, transactions, fund-flow edges, VASP attributions) atomically in PostgreSQL.
-- Manages database schemas and migrations via Goose.
+- **System Architecture and Specifications**: Designing the overall system architecture, technical specifications, data models, and the subsystem integration contract.
+- **REST API and HTTP Transport**: Implementing the Go web server, route handling, request decoding, response serialisation, and graceful process shutdown.
+- **Public Investigation Endpoints**: Exposing and serving the submission (`POST /api/v1/investigations`) and query (`GET /api/v1/investigations/{id}`) endpoints.
+- **Address Validation and Checksums**: Implementing Ethereum address parsing, format verification, and EIP-55 Keccak-256 checksum validation.
+- **Investigation Lifecycle and Orchestration**: Coordinating investigation state transitions (`pending`, `running`, `completed`, `failed`), asynchronous dispatch, and analysis service communication.
+- **Relational Schema and Migrations**: Designing the normalized PostgreSQL database schema and managing database revisions via Goose SQL migrations.
+- **Transactional Persistence and Graph Queries**: Implementing repository operations with `pgx`, connection pooling, and SQL joins to reconstruct multi-hop fund-flow graphs.
+- **Testing and Development Tooling**: Developing unit and integration test suites, environment configuration loading, and Makefile automation.
 
 ### Blockchain Analysis Layer - [Sakshi](https://github.com/sakshik2023)
 
-- Implements an HTTP server listening for requests at `POST /analysis`.
-- Connects to blockchain RPC nodes or explorer APIs to retrieve raw transaction history.
-- Parses and normalizes on-chain transaction data.
-- Traverses outgoing transactions from the suspect address up to the specified `max_depth`.
-- Categorises address roles (`suspect`, `intermediary`, `destination`, `other`).
-- Matches destination addresses against a dataset of known exchange and VASP addresses.
-- Returns structured JSON to the Go backend conforming to the integration contract.
+- **Service Interface and HTTP Transport**: Implementing and serving the `POST /analysis` HTTP endpoint conforming to the subsystem integration contract.
+- **On-Chain Data Acquisition**: Connecting to blockchain RPC nodes and explorer APIs to fetch raw transaction receipts and logs for suspect addresses.
+- **Transaction Parsing and Normalisation**: Parsing raw blockchain transaction formats and normalising fields, values, and timestamps into uniform data models.
+- **Fund-Flow Graph Traversal**: Implementing graph traversal algorithms to trace outgoing fund transfers iteratively up to the configured recursion depth.
+- **Address Role Categorisation**: Categorising wallet addresses discovered during traversal into contextual roles (`suspect`, `intermediary`, `destination`, `other`).
+- **VASP and Exchange Attribution**: Matching identified destination addresses against known exchange and VASP registry datasets to attribute destination entities.
+- **Response Serialisation and Validation**: Formatting and validating the structured analysis payload, ensuring decimal precision rules and integration contract compliance before returning data to the Go backend.
 
 ## Integration Contract
 
