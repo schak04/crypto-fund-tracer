@@ -1,0 +1,4 @@
+# Runtime dependencies (Python >= 3.11 is required: we use asyncio.timeout)
+fastapi>=0.110
+uvicorn[standard]>=0.29
+httpx>=0.27

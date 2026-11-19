@@ -1,0 +1,122 @@
+{
+  "description": "Demo blockchain for the mock provider. Addresses are synthetic except the Binance 14 exchange address and the EIP-55 test-vector suspect.",
+  "transfers": [
+    {
+      "label": "A1 suspect->mule1 5 ETH",
+      "tx_hash": "0x42a5bcb96d90ed72cbb326d45d6c1daa0f0c18e06f17b3f611c84338e4e500a5",
+      "from": "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+      "to": "0x1111111111111111111111111111111111111101",
+      "value_eth": "5.0",
+      "timestamp": 1789583400,
+      "kind": "normal"
+    },
+    {
+      "label": "A2 suspect->mule3 2 ETH",
+      "tx_hash": "0x608bda95c03cb7600b8bb52b4a952292750be8a6c83aebdc895b95fa5a39c9be",
+      "from": "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+      "to": "0x3333333333333333333333333333333333333303",
+      "value_eth": "2.0",
+      "timestamp": 1789583460,
+      "kind": "normal"
+    },
+    {
+      "label": "A3 suspect->dust 0.0001 ETH",
+      "tx_hash": "0xfd4d0c54cbf29d6723395b87efee3cafc44c91c0d5e041bad8c37597785b484f",
+      "from": "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+      "to": "0x5555555555555555555555555555555555555505",
+      "value_eth": "0.0001",
+      "timestamp": 1789583490,
+      "kind": "normal"
+    },
+    {
+      "label": "A4 suspect->contract 0.5 ETH",
+      "tx_hash": "0xce1c68b5c764257712dda3a074c4b599d1f333ed6319b8715fa9709a3c50a5a0",
+      "from": "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+      "to": "0x7777777777777777777777777777777777777707",
+      "value_eth": "0.5",
+      "timestamp": 1789583520,
+      "kind": "normal"
+    },
+    {
+      "label": "A5 FAILED suspect->term 1 ETH",
+      "tx_hash": "0x9b7fc066740df35f004ac10446886c4667b3702fe548254a5fcc4472e9f2aaf4",
+      "from": "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed",
+      "to": "0x8888888888888888888888888888888888888808",
+      "value_eth": "1.0",
+      "timestamp": 1789583550,
+      "kind": "normal",
+      "failed": true
+    },
+    {
+      "label": "A6 mule1->mule2 4.9 ETH",
+      "tx_hash": "0x887e6c253d2129469ebc0ec52b21a25452f6327911d3cff03ffd4fbc3a2711db",
+      "from": "0x1111111111111111111111111111111111111101",
+      "to": "0x2222222222222222222222222222222222222202",
+      "value_eth": "4.9",
+      "timestamp": 1789584000,
+      "kind": "normal"
+    },
+    {
+      "label": "A7 mule1->term (BEFORE funds arrived)",
+      "tx_hash": "0x96958c2a0827ee9cd2298deacba3b00a95eeb0048a940580dc23cc54450ca842",
+      "from": "0x1111111111111111111111111111111111111101",
+      "to": "0x8888888888888888888888888888888888888808",
+      "value_eth": "1.0",
+      "timestamp": 1789582400,
+      "kind": "normal"
+    },
+    {
+      "label": "A8 mule3->term 1.9 ETH",
+      "tx_hash": "0x7a469f73f78bc835bf239bc62ab60369109f4f2779ccb2bda0b23cd9a734547f",
+      "from": "0x3333333333333333333333333333333333333303",
+      "to": "0x8888888888888888888888888888888888888808",
+      "value_eth": "1.9",
+      "timestamp": 1789587000,
+      "kind": "normal"
+    },
+    {
+      "label": "A9 mule2->deposit 4.8 ETH",
+      "tx_hash": "0x825d1031cb8120b2f85315d5234e5b41df3d172d9df3dd74d7e5658efd34cf4b",
+      "from": "0x2222222222222222222222222222222222222202",
+      "to": "0x4444444444444444444444444444444444444404",
+      "value_eth": "4.8",
+      "timestamp": 1789584600,
+      "kind": "normal"
+    },
+    {
+      "label": "A10 mule2->mule1 0.1 ETH (cycle)",
+      "tx_hash": "0x7c0fa8fb13ed9142c729aaa437726e10a5461a2ffd4c8a85a4d3d01b01b4c60a",
+      "from": "0x2222222222222222222222222222222222222202",
+      "to": "0x1111111111111111111111111111111111111101",
+      "value_eth": "0.1",
+      "timestamp": 1789584700,
+      "kind": "normal"
+    },
+    {
+      "label": "A11 deposit->Binance14 4.79 ETH",
+      "tx_hash": "0xb22b09dabccdb98e1f6d67d163da6df0111779a784c271d0bf38b05b1ba2302b",
+      "from": "0x4444444444444444444444444444444444444404",
+      "to": "0x28c6c06298d514db089934071355e5743bf21d60",
+      "value_eth": "4.79",
+      "timestamp": 1789585200,
+      "kind": "internal"
+    },
+    {
+      "label": "B1 suspect->Binance14 1.5 ETH",
+      "tx_hash": "0x954ba710b86f55a80c24d9a8ac13a4ebaf023189677c62f643f7965c3c7209e3",
+      "from": "0x742d35cc6634c0532925a3b844bc454e4438f44e",
+      "to": "0x28c6c06298d514db089934071355e5743bf21d60",
+      "value_eth": "1.5",
+      "timestamp": 1789583400,
+      "kind": "normal"
+    }
+  ],
+  "contracts": [
+    "0x7777777777777777777777777777777777777707"
+  ],
+  "errors": {
+    "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1": "RPC_TIMEOUT",
+    "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb2": "RATE_LIMITED",
+    "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb3": "ANALYSIS_FAILED"
+  }
+}
